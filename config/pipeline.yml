@@ -1,0 +1,25 @@
+project:
+  name: renewable-site-lakehouse
+  region: wiesbaden_mvp
+
+region:
+  # min_lon, min_lat, max_lon, max_lat
+  bbox: [8.15, 49.98, 8.40, 50.18]
+  max_parcels: 500
+
+quality:
+  minimum_area_m2: 20000
+  maximum_grid_distance_m: 7000
+  allowed_geometry_types:
+    - Polygon
+    - MultiPolygon
+
+scoring:
+  weights:
+    grid: 0.40
+    land: 0.35
+    data_quality: 0.15
+    planning: 0.10
+  default_planning_score: 50
+  capacity_status_default: unknown
+

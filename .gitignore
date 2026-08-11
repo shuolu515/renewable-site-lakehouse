@@ -1,0 +1,26 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.py[cod]
+.env
+.env.*
+!.env.example
+
+# Do not publish downloaded or generated datasets by default.
+data/raw/
+data/processed/
+data/checkpoints/
+*.parquet
+*.delta
+
+# Local BI and Databricks artifacts
+powerbi/*.pbix
+.databricks/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+

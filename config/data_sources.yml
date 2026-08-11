@@ -1,0 +1,25 @@
+sources:
+  - source_id: hessen_alkis_inspire_wfs
+    name: Hessen ALKIS/INSPIRE WFS
+    data_type: parcel_geometry
+    role: authoritative_public_parcel_source
+    personal_data_allowed: false
+    redistribution_status: review_before_commit
+    production_note: Use a bounded query and preserve license/provenance metadata.
+
+  - source_id: openstreetmap_overpass
+    name: OpenStreetMap Overpass API
+    data_type: grid_asset_proxy
+    role: public_screening_proxy
+    personal_data_allowed: false
+    redistribution_status: attribution_and_odbl_review_required
+    production_note: Never present OSM assets as official DSO capacity evidence.
+
+  - source_id: capacity_not_loaded
+    name: Capacity not loaded
+    data_type: capacity_status
+    role: explicit_missing_data_marker
+    personal_data_allowed: false
+    redistribution_status: internal_metadata
+    production_note: All site assessments default to capacity_status=unknown.
+
