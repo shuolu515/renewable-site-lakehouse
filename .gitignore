@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.py[cod]
+*.egg-info/
 .env
 .env.*
 !.env.example
@@ -11,6 +12,7 @@ __pycache__/
 data/raw/
 data/processed/
 data/checkpoints/
+data/manifests/
 *.parquet
 *.delta
 

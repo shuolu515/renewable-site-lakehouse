@@ -4,8 +4,8 @@ project:
 
 region:
   # min_lon, min_lat, max_lon, max_lat
-  bbox: [8.15, 49.98, 8.40, 50.18]
-  max_parcels: 500
+  bbox: [8.20, 50.05, 8.30, 50.12]
+  max_parcels: 100
 
 quality:
   minimum_area_m2: 20000

@@ -36,4 +36,3 @@ def test_invalid_weights_are_rejected() -> None:
             planning_score=50,
             weights=weights,
         )
-

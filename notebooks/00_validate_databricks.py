@@ -18,4 +18,3 @@ df.write.format("delta").mode("overwrite").saveAsTable(table_name)
 # COMMAND ----------
 
 display(spark.table(table_name))
-

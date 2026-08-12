@@ -54,8 +54,8 @@ Phase 1 - Foundation is in progress.
 - [x] MVP scope and architecture
 - [x] Initial data contract and source register
 - [x] Explainable scoring configuration and unit-testable scoring logic
-- [ ] Databricks Free Edition workspace validation
-- [ ] Fresh public-data ingestion
+- [x] Databricks Free Edition workspace validation
+- [x] Fresh public-data ingestion
 - [ ] Bronze/Silver/Gold Delta implementation
 - [ ] Power BI dashboard
 
@@ -70,6 +70,25 @@ python -m pytest
 
 PySpark and Delta processing will run in Databricks. Local Python is used for connector tests,
 configuration validation and pure business rules.
+
+## Fetch the first parcel snapshot
+
+The connector uses the bounded Wiesbaden configuration in `config/pipeline.yml`. Complete raw
+downloads are ignored by Git; every run writes an auditable manifest next to its response.
+
+```powershell
+python ingestion/fetch_parcels.py
+```
+
+Expected output:
+
+```text
+data/raw/hessen_alkis_inspire_wfs/<ingestion-id>/parcels.geojson
+data/raw/hessen_alkis_inspire_wfs/<ingestion-id>/manifest.json
+```
+
+The official API exposes a public subset without owner data. Do not add owner information or other
+personal data to this project.
 
 ## Data and licensing
 

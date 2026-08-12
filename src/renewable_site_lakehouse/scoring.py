@@ -20,6 +20,9 @@ class ScoreWeights:
             raise ValueError("Score weights must sum to 1.0")
 
 
+DEFAULT_SCORE_WEIGHTS = ScoreWeights()
+
+
 def _bounded(value: float) -> float:
     return max(0.0, min(100.0, float(value)))
 
@@ -30,7 +33,7 @@ def calculate_total_score(
     land_score: float,
     data_quality_score: float,
     planning_score: float,
-    weights: ScoreWeights = ScoreWeights(),
+    weights: ScoreWeights = DEFAULT_SCORE_WEIGHTS,
 ) -> float:
     """Return a transparent weighted score in the inclusive range 0..100."""
 
@@ -42,4 +45,3 @@ def calculate_total_score(
         + weights.planning * _bounded(planning_score)
     )
     return round(_bounded(total), 2)
-

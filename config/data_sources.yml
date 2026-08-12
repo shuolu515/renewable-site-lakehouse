@@ -3,9 +3,12 @@ sources:
     name: Hessen ALKIS/INSPIRE WFS
     data_type: parcel_geometry
     role: authoritative_public_parcel_source
+    endpoint: https://www.geoportal.hessen.de/spatial-objects/710/collections/cp:CadastralParcel/items
+    license: Datenlizenz Deutschland - Zero - Version 2.0
+    license_url: https://www.govdata.de/dl-de/zero-2-0
     personal_data_allowed: false
-    redistribution_status: review_before_commit
-    production_note: Use a bounded query and preserve license/provenance metadata.
+    redistribution_status: open_data_with_provenance
+    production_note: Use a bounded query, preserve provenance, and do not enrich with owner data.
 
   - source_id: openstreetmap_overpass
     name: OpenStreetMap Overpass API
