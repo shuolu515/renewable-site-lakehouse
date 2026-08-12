@@ -1,5 +1,28 @@
 # Data dictionary
 
+## Bronze parcel grain
+
+`bronze.parcels_raw` contains one row per source feature and ingestion run. The composite key is
+`(ingestion_id, feature_id)`. `raw_feature_json` retains the complete source feature; the other
+columns provide lineage and allow an ingestion to be validated without reparsing the manifest.
+
+| Field | Type | Required | Rule |
+|---|---|---:|---|
+| `ingestion_id` | string | yes | UUID and equal to the snapshot manifest |
+| `feature_id` | string | yes | unique within one ingestion |
+| `source_id` | string | yes | `hessen_alkis_inspire_wfs` for this table |
+| `collection_id` | string | yes | source collection identifier |
+| `geometry_type` | string | no | source-provided geometry type |
+| `raw_feature_json` | string | yes | complete, unmodified GeoJSON feature serialized as JSON |
+| `source_license` | string | yes | license recorded by the manifest |
+| `source_license_url` | string | yes | canonical license reference |
+| `request_bbox` | string | no | bounded source request extent |
+| `request_limit` | integer | no | requested maximum feature count |
+| `payload_sha256` | string | yes | checksum of the original response |
+| `source_file` | string | yes | Unity Catalog volume path |
+| `source_completed_at` | timestamp | no | source ingestion completion time |
+| `loaded_at` | timestamp | yes | Bronze write time |
+
 ## Parcel contract
 
 | Field | Type | Required | Rule |

@@ -48,7 +48,7 @@ powerbi/      dashboard documentation; PBIX files are ignored by default
 
 ## Current status
 
-Phase 1 - Foundation is in progress.
+Phase 2 - Ingestion and Bronze is in progress.
 
 - [x] Independent repository scaffold
 - [x] MVP scope and architecture
@@ -56,7 +56,8 @@ Phase 1 - Foundation is in progress.
 - [x] Explainable scoring configuration and unit-testable scoring logic
 - [x] Databricks Free Edition workspace validation
 - [x] Fresh public-data ingestion
-- [ ] Bronze/Silver/Gold Delta implementation
+- [x] Idempotent parcel Bronze Delta notebook
+- [ ] Grid-asset Bronze and Silver/Gold Delta implementation
 - [ ] Power BI dashboard
 
 ## Local setup
@@ -90,6 +91,15 @@ data/raw/hessen_alkis_inspire_wfs/<ingestion-id>/manifest.json
 The official API exposes a public subset without owner data. Do not add owner information or other
 personal data to this project.
 
+## Load the parcel Bronze table
+
+Import `notebooks/01_load_parcels_bronze.py` into Databricks, upload the local GeoJSON and its
+manifest to the Unity Catalog volume path printed by the notebook, and run all cells. The notebook
+creates `workspace.bronze.parcels_raw`, validates the batch and uses a Delta merge to make reruns
+idempotent.
+
+See `docs/databricks_bronze_walkthrough.md` for the exact upload and verification steps.
+
 ## Data and licensing
 
 Do not commit complete raw downloads until redistribution terms are confirmed. Never ingest or
@@ -98,10 +108,11 @@ publish land-owner or other personal data. See `config/data_sources.yml` and
 
 ## Roadmap
 
-1. Validate a minimal Delta table in Databricks.
-2. Implement a bounded ALKIS parcel connector.
-3. Implement a bounded OSM grid-asset connector.
-4. Build Bronze and Silver Delta tables with quarantine handling.
-5. Build the Gold site-assessment fact and dimensions.
-6. Create the Power BI dashboard, verify the public repository, and publish to GitHub.
+1. Validate a minimal Delta table in Databricks. (complete)
+2. Implement a bounded ALKIS parcel connector. (complete)
+3. Load the first parcel Bronze Delta table. (complete)
+4. Implement a bounded OSM grid-asset connector.
+5. Build the grid Bronze and Silver Delta tables with quarantine handling.
+6. Build the Gold site-assessment fact and dimensions.
+7. Create the Power BI dashboard and finalize the public GitHub repository.
 

@@ -63,3 +63,32 @@
 
 - None for Bronze ingestion.
 
+## 2026-08-12 - Parcel Bronze ingestion completed
+
+### Completed
+
+- Added Unity Catalog schema and managed-volume setup for raw landing files.
+- Added multiline GeoJSON parsing that retains each complete feature as raw JSON.
+- Added manifest, feature-count, identifier uniqueness and non-PII checks before writing.
+- Added an idempotent Delta merge keyed by ingestion and feature identifiers.
+- Added run-level verification and Delta history output.
+- Executed the notebook twice in Databricks; both runs returned 100 rows and 100 distinct feature
+  identifiers for the first ingestion.
+
+### Decisions
+
+- Use `workspace.landing.raw` for file-based landing data and `workspace.bronze` for managed Delta
+  tables.
+- Keep Bronze close to the source: only expose the feature id and geometry type needed for lineage
+  and validation; defer business parsing to Silver.
+- Do not overwrite prior ingestion runs. A repeated run of the same snapshot inserts no duplicates.
+
+### Next
+
+1. Implement the bounded OSM grid-asset connector as the next independent feature.
+2. Load grid-asset snapshots into their Bronze Delta table.
+
+### Blockers
+
+- None.
+
