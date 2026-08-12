@@ -14,9 +14,13 @@ sources:
     name: OpenStreetMap Overpass API
     data_type: grid_asset_proxy
     role: public_screening_proxy
+    endpoint: https://overpass-api.de/api/interpreter
+    license: Open Data Commons Open Database License (ODbL) 1.0
+    license_url: https://www.openstreetmap.org/copyright
+    attribution: © OpenStreetMap contributors
     personal_data_allowed: false
-    redistribution_status: attribution_and_odbl_review_required
-    production_note: Never present OSM assets as official DSO capacity evidence.
+    redistribution_status: attribution_required
+    production_note: Use bounded queries and never present OSM assets as official DSO capacity evidence.
 
   - source_id: capacity_not_loaded
     name: Capacity not loaded

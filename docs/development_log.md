@@ -92,3 +92,38 @@
 
 - None.
 
+## 2026-08-12 - OSM grid-proxy ingestion implemented
+
+### Completed
+
+- Added a bounded Overpass query for substations, transformers and power lines.
+- Added response validation, retry handling, immutable raw output and a provenance manifest.
+- Recorded ODbL licensing and the required `© OpenStreetMap contributors` attribution.
+- Excluded contributor metadata from the query and limited each response to 500 assets.
+- Preserved `capacity_status = unknown` as an explicit trust boundary.
+- Ran the first real Wiesbaden ingestion: 163 grid proxies, HTTP 200, one attempt.
+
+### Verification
+
+- `pytest`: 12 passed.
+- `ruff check`: passed.
+- `ruff format --check`: passed.
+- Asset mix: 120 substations, 8 transformers, 27 lines and 8 minor lines.
+- Element mix: 102 nodes and 61 ways.
+- Raw snapshot size: 81,007 bytes.
+- Raw SHA-256: `caf508596242881bd7f8e4de0eb9402d46f0979cc310aa095e34830e994d4c1d`.
+
+### Decisions
+
+- Use OSM only as a public proximity and asset-type proxy.
+- Query one small Wiesbaden bounding box and use exponential retry for temporary HTTP failures.
+- Store source tags in Bronze later, but never infer operator approval or available grid capacity.
+
+### Next
+
+1. Load the grid snapshot into `bronze.grid_assets_raw`.
+
+### Blockers
+
+- None.
+

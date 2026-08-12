@@ -57,6 +57,7 @@ Phase 2 - Ingestion and Bronze is in progress.
 - [x] Databricks Free Edition workspace validation
 - [x] Fresh public-data ingestion
 - [x] Idempotent parcel Bronze Delta notebook
+- [x] Bounded OSM grid-asset ingestion
 - [ ] Grid-asset Bronze and Silver/Gold Delta implementation
 - [ ] Power BI dashboard
 
@@ -100,6 +101,19 @@ idempotent.
 
 See `docs/databricks_bronze_walkthrough.md` for the exact upload and verification steps.
 
+## Fetch grid-asset proxies
+
+The second connector runs a bounded Overpass query for OSM substations, transformers and power
+lines. It stores the response and provenance manifest locally while explicitly keeping
+`capacity_status = unknown`.
+
+```powershell
+python ingestion/fetch_grid_assets.py
+```
+
+OpenStreetMap data is available under ODbL. Any dashboard or published output using these records
+must display `© OpenStreetMap contributors` and link to the OSM copyright page.
+
 ## Data and licensing
 
 Do not commit complete raw downloads until redistribution terms are confirmed. Never ingest or
@@ -111,7 +125,7 @@ publish land-owner or other personal data. See `config/data_sources.yml` and
 1. Validate a minimal Delta table in Databricks. (complete)
 2. Implement a bounded ALKIS parcel connector. (complete)
 3. Load the first parcel Bronze Delta table. (complete)
-4. Implement a bounded OSM grid-asset connector.
+4. Implement a bounded OSM grid-asset connector. (complete)
 5. Build the grid Bronze and Silver Delta tables with quarantine handling.
 6. Build the Gold site-assessment fact and dimensions.
 7. Create the Power BI dashboard and finalize the public GitHub repository.

@@ -6,6 +6,7 @@ region:
   # min_lon, min_lat, max_lon, max_lat
   bbox: [8.20, 50.05, 8.30, 50.12]
   max_parcels: 100
+  max_grid_assets: 500
 
 quality:
   minimum_area_m2: 20000
