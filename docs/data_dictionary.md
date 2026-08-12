@@ -23,6 +23,31 @@ columns provide lineage and allow an ingestion to be validated without reparsing
 | `source_completed_at` | timestamp | no | source ingestion completion time |
 | `loaded_at` | timestamp | yes | Bronze write time |
 
+## Bronze grid-asset grain
+
+`bronze.grid_assets_raw` contains one row per OSM element and ingestion run. The composite key is
+`(ingestion_id, element_key)`, and the complete source element remains in `raw_element_json`.
+
+| Field | Type | Required | Rule |
+|---|---|---:|---|
+| `ingestion_id` | string | yes | UUID and equal to the snapshot manifest |
+| `element_key` | string | yes | `<OSM type>/<OSM id>`, unique within one ingestion |
+| `osm_element_type` | string | yes | `node` or `way` |
+| `osm_element_id` | long | yes | source-provided OSM identifier |
+| `power_tag` | string | yes | substation, transformer, line or minor_line |
+| `raw_element_json` | string | yes | complete OSM element serialized as JSON |
+| `source_id` | string | yes | `openstreetmap_overpass` |
+| `source_license` | string | yes | ODbL 1.0 recorded by the manifest |
+| `source_license_url` | string | yes | canonical OSM license/copyright reference |
+| `source_attribution` | string | yes | `© OpenStreetMap contributors` |
+| `request_bbox_json` | string | no | bounded request extent serialized as JSON |
+| `request_limit` | integer | no | configured maximum result count |
+| `payload_sha256` | string | yes | checksum of the original response |
+| `source_file` | string | yes | Unity Catalog volume path |
+| `capacity_status` | string | yes | always `unknown` in the MVP |
+| `source_completed_at` | timestamp | no | source ingestion completion time |
+| `loaded_at` | timestamp | yes | Bronze write time |
+
 ## Parcel contract
 
 | Field | Type | Required | Rule |

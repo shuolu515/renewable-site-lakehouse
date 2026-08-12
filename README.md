@@ -58,7 +58,8 @@ Phase 2 - Ingestion and Bronze is in progress.
 - [x] Fresh public-data ingestion
 - [x] Idempotent parcel Bronze Delta notebook
 - [x] Bounded OSM grid-asset ingestion
-- [ ] Grid-asset Bronze and Silver/Gold Delta implementation
+- [x] Grid-asset Bronze Delta notebook
+- [ ] Silver/Gold Delta implementation
 - [ ] Power BI dashboard
 
 ## Local setup
@@ -114,6 +115,9 @@ python ingestion/fetch_grid_assets.py
 OpenStreetMap data is available under ODbL. Any dashboard or published output using these records
 must display `© OpenStreetMap contributors` and link to the OSM copyright page.
 
+Import `notebooks/02_load_grid_assets_bronze.py` after uploading the grid snapshot. It creates
+`workspace.bronze.grid_assets_raw` and uses Delta merge semantics to make repeated runs idempotent.
+
 ## Data and licensing
 
 Do not commit complete raw downloads until redistribution terms are confirmed. Never ingest or
@@ -126,7 +130,8 @@ publish land-owner or other personal data. See `config/data_sources.yml` and
 2. Implement a bounded ALKIS parcel connector. (complete)
 3. Load the first parcel Bronze Delta table. (complete)
 4. Implement a bounded OSM grid-asset connector. (complete)
-5. Build the grid Bronze and Silver Delta tables with quarantine handling.
-6. Build the Gold site-assessment fact and dimensions.
-7. Create the Power BI dashboard and finalize the public GitHub repository.
+5. Load the grid Bronze table. (complete)
+6. Build the Silver Delta tables with quarantine handling.
+7. Build the Gold site-assessment fact and dimensions.
+8. Create the Power BI dashboard and finalize the public GitHub repository.
 

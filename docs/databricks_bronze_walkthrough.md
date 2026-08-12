@@ -66,3 +66,27 @@ for that ingestion because the Delta merge key is `(ingestion_id, feature_id)`.
   another ingestion.
 - **Personal-data check fails**: do not bypass it. Only the declared public, non-owner-data source
   belongs in this project.
+
+## Load the OSM grid snapshot
+
+The second Bronze notebook loads the uploaded OSM snapshot into
+`workspace.bronze.grid_assets_raw`.
+
+1. Confirm these files exist in the volume:
+
+   ```text
+   /Volumes/workspace/landing/raw/openstreetmap_overpass/
+   4db321da-72b6-44ae-8d8f-6d3470e85f57/grid_assets.json
+   /Volumes/workspace/landing/raw/openstreetmap_overpass/
+   4db321da-72b6-44ae-8d8f-6d3470e85f57/manifest.json
+   ```
+
+2. Import `notebooks/02_load_grid_assets_bronze.py` into the Databricks workspace.
+3. Run all cells twice.
+
+Both runs should report 163 rows, 163 distinct elements and 163 records with unknown capacity.
+The asset summary should report 120 substations, 8 transformers, 27 lines and 8 minor lines.
+
+The composite merge key is `(ingestion_id, element_key)`, where `element_key` combines the OSM
+element type and id, for example `node/123`. This prevents a node and way with the same numeric id
+from being treated as the same asset.

@@ -92,6 +92,31 @@
 
 - None.
 
+## 2026-08-12 - Grid-asset Bronze ingestion completed
+
+### Completed
+
+- Added PySpark parsing for heterogeneous OSM node and way elements.
+- Added manifest, element-count, unique-key, supported-tag and capacity-status checks.
+- Retained complete raw elements, request lineage, SHA-256, ODbL license and attribution.
+- Added an idempotent Delta merge keyed by ingestion id and OSM element key.
+- Executed the notebook twice in Databricks; both runs returned 163 rows, 163 distinct elements
+  and 163 records with unknown capacity.
+
+### Decisions
+
+- Combine element type and numeric id because OSM node and way identifier spaces are independent.
+- Keep `capacity_status = unknown` in Bronze and prevent any other value from being written.
+- Parse business fields such as voltage and operator only in Silver; Bronze remains source-oriented.
+
+### Next
+
+1. Start Silver parsing and data-quality quarantine.
+
+### Blockers
+
+- None.
+
 ## 2026-08-12 - OSM grid-proxy ingestion implemented
 
 ### Completed
