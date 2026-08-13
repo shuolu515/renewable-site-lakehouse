@@ -1,5 +1,32 @@
 # Development log
 
+## 2026-08-13 - Grid-asset Silver transformation completed
+
+### Completed
+
+- Added typed parsing for OSM identifiers, asset types, geometry, centroids and voltage levels.
+- Added Point, LineString and Polygon GeoJSON construction for node and way elements.
+- Added deterministic source-consistency, geometry, voltage, coordinate and capacity rules.
+- Added valid and quarantine Delta targets with idempotent merge keys.
+- Added in-memory failure-path assertions that do not write synthetic project records.
+- Verified Bronze-to-Silver row accounting in Databricks.
+- Ran the notebook twice and confirmed stable target counts.
+
+### Decisions
+
+- Normalize `minor_line` to analytical type `line` while preserving `source_power_tag`.
+- Keep optional OSM voltage, operator and name tags nullable.
+- Preserve `capacity_status = unknown`; public OSM assets do not prove connection capacity.
+
+### Next
+
+1. Build the Gold site-screening model from the two standardized Silver datasets.
+2. Expose business-ready measures for Power BI.
+
+### Blockers
+
+- None.
+
 ## 2026-08-11 - Foundation started
 
 ### Completed

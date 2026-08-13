@@ -60,7 +60,8 @@ Phase 3 - Silver and data quality is in progress.
 - [x] Bounded OSM grid-asset ingestion
 - [x] Grid-asset Bronze Delta notebook
 - [x] Parcel Silver transformation and quarantine notebook
-- [ ] Grid Silver and Gold Delta implementation
+- [x] Grid-asset Silver transformation and quarantine notebook
+- [ ] Gold Delta implementation
 - [ ] Power BI dashboard
 
 ## Local setup
@@ -124,6 +125,10 @@ Import `notebooks/02_load_grid_assets_bronze.py` after uploading the grid snapsh
 Import `notebooks/03_transform_parcels_silver.py` after the parcel Bronze table is ready. It parses
 typed analytical fields, applies deterministic quality rules and routes invalid rows to
 `workspace.silver.invalid_parcels`. See `docs/databricks_silver_walkthrough.md` for verification.
+
+Import `notebooks/04_transform_grid_assets_silver.py` after the grid Bronze table is ready. It
+normalizes OSM asset types, geometry and voltage fields and routes invalid rows to
+`workspace.silver.invalid_grid_assets`.
 
 ## Data and licensing
 

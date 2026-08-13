@@ -92,6 +92,9 @@ Parcel quarantine error codes:
 
 ## Grid asset contract
 
+`silver.grid_assets` contains standardized OSM electricity assets that pass the technical quality
+rules. `silver.invalid_grid_assets` preserves rejected source elements and their failure reasons.
+
 | Field | Type | Required | Rule |
 |---|---|---:|---|
 | `grid_asset_id` | string | yes | non-empty and unique in the source snapshot |
@@ -103,6 +106,34 @@ Parcel quarantine error codes:
 | `capacity_status` | string | yes | `unknown` for the MVP |
 | `ingestion_id` | string | yes | UUID for the ingestion run |
 | `ingested_at` | timestamp | yes | UTC timestamp |
+
+Additional Silver fields:
+
+| Field | Type | Required | Rule |
+|---|---|---:|---|
+| `source_power_tag` | string | yes | original OSM power tag |
+| `geometry_type` | string | yes | Point, LineString or Polygon |
+| `centroid_lat` | double | yes | inside the bounded source request |
+| `centroid_lon` | double | yes | inside the bounded source request |
+| `voltage_raw` | string | no | original OSM voltage tag |
+| `voltage_level_kv` | double | no | maximum parsed voltage converted from volts to kV |
+| `asset_name` | string | no | optional OSM name tag |
+| `quality_status` | string | yes | `passed` in `silver.grid_assets` |
+| `transformed_at` | timestamp | yes | Silver processing time |
+
+Grid-asset quarantine error codes:
+
+- `missing_grid_asset_id`
+- `source_key_mismatch`
+- `duplicate_grid_asset_id`
+- `unsupported_osm_element_type`
+- `unsupported_power_tag`
+- `missing_geometry`
+- `insufficient_geometry_points`
+- `invalid_voltage`
+- `centroid_outside_request_bbox`
+- `unexpected_capacity_status`
+- `bronze_source_mismatch`
 
 ## Site assessment grain
 

@@ -25,3 +25,16 @@ are never written to project tables.
 A parcel smaller than 20,000 square metres is technically valid and remains in Silver. It receives
 `meets_minimum_area = false` for later screening. Quarantine is reserved for malformed or
 untrustworthy data, not valid data that happens to be unsuitable for the business use case.
+
+## Grid-asset transformation
+
+Import `notebooks/04_transform_grid_assets_silver.py` after the grid Bronze notebook has completed.
+It creates `workspace.silver.grid_assets` and `workspace.silver.invalid_grid_assets`. No additional
+file upload is required.
+
+The transformation converts OSM nodes to GeoJSON points, line ways to line strings and substation
+ways to polygons. It normalizes `minor_line` to the analytical type `line` while preserving the
+original power tag. Optional OSM voltage, operator and name tags remain nullable.
+
+Run the notebook twice and verify that `bronze_count` equals `accounted_count` on both runs, and
+that the Silver and quarantine counts do not increase on the second run.
