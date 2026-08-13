@@ -50,6 +50,10 @@ columns provide lineage and allow an ingestion to be validated without reparsing
 
 ## Parcel contract
 
+`silver.parcels` has one row per parcel and ingestion. Only records with no technical quality
+errors enter this table. `silver.invalid_parcels` retains rejected Bronze payloads and an array of
+machine-readable failure reasons.
+
 | Field | Type | Required | Rule |
 |---|---|---:|---|
 | `parcel_id` | string | yes | non-empty and unique in the source snapshot |
@@ -60,6 +64,31 @@ columns provide lineage and allow an ingestion to be validated without reparsing
 | `source_id` | string | yes | must exist in the source register |
 | `ingestion_id` | string | yes | UUID for the ingestion run |
 | `ingested_at` | timestamp | yes | UTC timestamp |
+
+Additional Silver fields:
+
+| Field | Type | Required | Rule |
+|---|---|---:|---|
+| `national_cadastral_reference` | string | no | source-provided public reference |
+| `parcel_label` | string | no | source-provided display label |
+| `source_area_uom` | string | yes | must equal `m2` |
+| `centroid_lat` | double | yes | inside the source request bounding box |
+| `centroid_lon` | double | yes | inside the source request bounding box |
+| `meets_minimum_area` | boolean | yes | business flag; false does not mean invalid data |
+| `quality_status` | string | yes | `passed` in `silver.parcels` |
+| `transformed_at` | timestamp | yes | Silver processing time |
+
+Parcel quarantine error codes:
+
+- `missing_parcel_id`
+- `source_key_mismatch`
+- `duplicate_parcel_id`
+- `missing_area`
+- `non_positive_area`
+- `unexpected_area_unit`
+- `unsupported_geometry_type`
+- `missing_geometry`
+- `centroid_outside_request_bbox`
 
 ## Grid asset contract
 

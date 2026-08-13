@@ -92,6 +92,32 @@
 
 - None.
 
+## 2026-08-13 - Parcel Silver transformation completed
+
+### Completed
+
+- Added typed parsing for parcel identifiers, area, geometry and centroid coordinates.
+- Added deterministic key, type, geometry, unit, area and coordinate-range quality rules.
+- Added valid and quarantine Delta tables with idempotent merge keys.
+- Added in-notebook synthetic checks that exercise failure paths without polluting project tables.
+- Verified Bronze-to-Silver row accounting in Databricks.
+- Ran the notebook twice and confirmed stable target counts.
+
+### Decisions
+
+- Keep technically valid small parcels in Silver and expose `meets_minimum_area` as a business flag.
+- Preserve the original Bronze payload in quarantine so rejected rows remain debuggable.
+- Use machine-readable quality error codes rather than a single pass/fail flag.
+
+### Next
+
+1. Implement the grid-asset Silver transformation and quarantine.
+2. Build the Gold screening model after both Silver datasets are standardized.
+
+### Blockers
+
+- None.
+
 ## 2026-08-12 - Grid-asset Bronze ingestion completed
 
 ### Completed

@@ -48,7 +48,7 @@ powerbi/      dashboard documentation; PBIX files are ignored by default
 
 ## Current status
 
-Phase 2 - Ingestion and Bronze is in progress.
+Phase 3 - Silver and data quality is in progress.
 
 - [x] Independent repository scaffold
 - [x] MVP scope and architecture
@@ -59,7 +59,8 @@ Phase 2 - Ingestion and Bronze is in progress.
 - [x] Idempotent parcel Bronze Delta notebook
 - [x] Bounded OSM grid-asset ingestion
 - [x] Grid-asset Bronze Delta notebook
-- [ ] Silver/Gold Delta implementation
+- [x] Parcel Silver transformation and quarantine notebook
+- [ ] Grid Silver and Gold Delta implementation
 - [ ] Power BI dashboard
 
 ## Local setup
@@ -117,6 +118,12 @@ must display `© OpenStreetMap contributors` and link to the OSM copyright page.
 
 Import `notebooks/02_load_grid_assets_bronze.py` after uploading the grid snapshot. It creates
 `workspace.bronze.grid_assets_raw` and uses Delta merge semantics to make repeated runs idempotent.
+
+## Transform parcels to Silver
+
+Import `notebooks/03_transform_parcels_silver.py` after the parcel Bronze table is ready. It parses
+typed analytical fields, applies deterministic quality rules and routes invalid rows to
+`workspace.silver.invalid_parcels`. See `docs/databricks_silver_walkthrough.md` for verification.
 
 ## Data and licensing
 
