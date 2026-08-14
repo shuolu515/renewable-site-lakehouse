@@ -10,6 +10,7 @@ from renewable_site_lakehouse.grid_ingestion import (
     GridIngestionConfig,
     build_overpass_query,
     fetch_grid_assets,
+    load_project_config,
     run_grid_ingestion,
 )
 
@@ -57,6 +58,24 @@ def test_rejects_unbounded_asset_limit() -> None:
 
     with pytest.raises(ValueError, match="max_assets must be between"):
         config.validate()
+
+
+def test_load_project_config_prefers_expanded_grid_bbox(tmp_path) -> None:
+    config_path = tmp_path / "pipeline.yml"
+    config_path.write_text(
+        """
+region:
+  bbox: [8.15, 50.425, 8.175, 50.45]
+  grid_bbox: [8.05, 50.36, 8.275, 50.515]
+  max_grid_assets: 500
+""".strip(),
+        encoding="utf-8",
+    )
+
+    config = load_project_config(config_path)
+
+    assert config.bbox == (8.05, 50.36, 8.275, 50.515)
+    assert config.max_assets == 500
 
 
 def test_fetch_posts_query_without_osm_user_metadata() -> None:

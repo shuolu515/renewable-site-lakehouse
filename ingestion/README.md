@@ -24,3 +24,6 @@ The grid connector requests only electricity features inside the configured boun
 the response size and excludes OSM contributor metadata. Its output is a public screening proxy,
 not evidence of remaining grid capacity or a viable connection point.
 
+`region.grid_bbox` is deliberately wider than the parcel snapshot boundary because screening may
+consider public grid proxies up to the configured maximum distance from the candidate area.
+

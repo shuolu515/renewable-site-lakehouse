@@ -220,7 +220,7 @@ def load_project_config(path: Path) -> GridIngestionConfig:
     config = yaml.safe_load(path.read_text(encoding="utf-8"))
     region = config["region"]
     return GridIngestionConfig(
-        bbox=tuple(float(value) for value in region["bbox"]),
+        bbox=tuple(float(value) for value in region.get("grid_bbox", region["bbox"])),
         max_assets=int(region["max_grid_assets"]),
     )
 

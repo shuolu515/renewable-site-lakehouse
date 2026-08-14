@@ -3,8 +3,10 @@ project:
   region: limburg_weilburg_rural_mvp
 
 region:
-  # min_lon, min_lat, max_lon, max_lat
+  # Complete parcel snapshot boundary: min_lon, min_lat, max_lon, max_lat
   bbox: [8.15, 50.425, 8.175, 50.45]
+  # Expanded search boundary for grid proxies within roughly 7 km of the parcel area
+  grid_bbox: [8.05, 50.36, 8.275, 50.515]
   parcel_page_size: 200
   max_parcels: 1000
   max_grid_assets: 500

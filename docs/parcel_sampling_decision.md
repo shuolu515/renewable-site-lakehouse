@@ -46,3 +46,10 @@ The accessible 972-record snapshot contained:
 These results support two separate Gold screening paths: rank standalone parcels that already meet
 the area threshold, and evaluate spatially adjacent smaller parcels as possible land pools. Neither
 path establishes planning permission, owner consent, engineering feasibility or grid capacity.
+
+## Grid search boundary
+
+The parcel boundary is intentionally small enough for a complete snapshot, but the business rule
+allows grid proxies up to seven kilometres away. The OSM connector therefore uses a separate,
+expanded `grid_bbox` rather than restricting grid assets to the parcel boundary. A validation query
+returned 412 public proxies without reaching the configured 500-record safety limit.
