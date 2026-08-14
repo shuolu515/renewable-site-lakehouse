@@ -11,6 +11,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 import httpx
 import yaml
@@ -27,7 +28,8 @@ USER_AGENT = "renewable-site-lakehouse/0.1 educational-portfolio"
 @dataclass(frozen=True)
 class ParcelIngestionConfig:
     bbox: tuple[float, float, float, float]
-    limit: int = 100
+    limit: int = 200
+    max_features: int = 1000
     endpoint: str = DEFAULT_ENDPOINT
     timeout_seconds: float = 45.0
     max_attempts: int = 3
@@ -41,6 +43,10 @@ class ParcelIngestionConfig:
         if self.limit not in ALLOWED_LIMITS:
             allowed = ", ".join(str(value) for value in sorted(ALLOWED_LIMITS))
             raise ValueError(f"limit must be one of: {allowed}")
+        if not self.limit <= self.max_features <= 5000:
+            raise ValueError("max_features must be between limit and 5000")
+        if self.max_features % self.limit != 0:
+            raise ValueError("max_features must be a multiple of limit")
         if self.max_attempts < 1:
             raise ValueError("max_attempts must be at least 1")
         if self.timeout_seconds <= 0:
@@ -82,13 +88,78 @@ def _validate_feature_collection(payload: object, limit: int) -> dict:
     return payload
 
 
+@dataclass(frozen=True)
+class ParcelFetchResult:
+    payload: dict
+    last_response: httpx.Response
+    total_attempts: int
+    page_count: int
+    number_matched: int | None
+    matched_count_difference: int | None
+    truncated: bool
+
+
+def _next_link(payload: dict, endpoint: str) -> str | None:
+    links = payload.get("links", [])
+    if not isinstance(links, list):
+        raise TypeError("FeatureCollection.links must be a list when present")
+    next_links = [link for link in links if isinstance(link, dict) and link.get("rel") == "next"]
+    if len(next_links) > 1:
+        raise ValueError("API response contains more than one next link")
+    if not next_links:
+        return None
+    href = next_links[0].get("href")
+    if not isinstance(href, str) or not href:
+        raise ValueError("API next link has no valid href")
+    expected = urlparse(endpoint)
+    actual = urlparse(href)
+    if actual.scheme != "https" or actual.hostname != expected.hostname:
+        raise ValueError("API next link points outside the configured HTTPS host")
+    return href
+
+
+def _feature_key(feature: dict, index: int) -> str:
+    properties = feature["properties"]
+    key = properties.get("localId") or feature.get("id")
+    if not isinstance(key, str) or not key.strip():
+        raise ValueError(f"features[{index}] has no stable parcel identifier")
+    return key.strip()
+
+
+def _fetch_page(
+    client: httpx.Client,
+    config: ParcelIngestionConfig,
+    *,
+    url: str,
+    params: dict[str, str | int] | None,
+    sleep: Callable[[float], None],
+) -> tuple[dict, httpx.Response, int]:
+    last_error: Exception | None = None
+    for attempt in range(1, config.max_attempts + 1):
+        try:
+            response = client.get(url, params=params)
+            response.raise_for_status()
+            try:
+                payload = response.json()
+            except json.JSONDecodeError as exc:
+                preview = " ".join(response.text[:160].split())
+                raise ValueError(f"API did not return JSON: {preview}") from exc
+            return _validate_feature_collection(payload, config.limit), response, attempt
+        except (httpx.HTTPError, ValueError) as exc:
+            last_error = exc
+            if attempt == config.max_attempts:
+                raise
+            sleep(float(2 ** (attempt - 1)))
+    raise RuntimeError("unreachable retry state") from last_error
+
+
 def fetch_parcels(
     config: ParcelIngestionConfig,
     *,
     client: httpx.Client | None = None,
     sleep: Callable[[float], None] = time.sleep,
-) -> tuple[dict, httpx.Response, int]:
-    """Fetch one bounded page and return payload, response and attempts used."""
+) -> ParcelFetchResult:
+    """Follow official next links and return one bounded, deduplicated snapshot."""
 
     config.validate()
     owns_client = client is None
@@ -98,23 +169,74 @@ def fetch_parcels(
         follow_redirects=True,
     )
     try:
-        last_error: Exception | None = None
-        for attempt in range(1, config.max_attempts + 1):
-            try:
-                response = active_client.get(config.endpoint, params=_request_params(config))
-                response.raise_for_status()
-                try:
-                    payload = response.json()
-                except json.JSONDecodeError as exc:
-                    preview = " ".join(response.text[:160].split())
-                    raise ValueError(f"API did not return JSON: {preview}") from exc
-                return _validate_feature_collection(payload, config.limit), response, attempt
-            except (httpx.HTTPError, ValueError) as exc:
-                last_error = exc
-                if attempt == config.max_attempts:
-                    raise
-                sleep(float(2 ** (attempt - 1)))
-        raise RuntimeError("unreachable retry state") from last_error
+        features: list[dict] = []
+        seen_keys: set[str] = set()
+        page_count = 0
+        total_attempts = 0
+        number_matched: int | None = None
+        next_url: str | None = config.endpoint
+        params: dict[str, str | int] | None = _request_params(config)
+        first_payload: dict | None = None
+        last_response: httpx.Response | None = None
+
+        while next_url and len(features) < config.max_features:
+            payload, response, attempts = _fetch_page(
+                active_client,
+                config,
+                url=next_url,
+                params=params,
+                sleep=sleep,
+            )
+            first_payload = first_payload or payload
+            last_response = response
+            page_count += 1
+            total_attempts += attempts
+            if page_count == 1 and isinstance(payload.get("numberMatched"), int):
+                number_matched = payload["numberMatched"]
+
+            page_features = payload["features"]
+            for feature in page_features:
+                key = _feature_key(feature, len(features))
+                if key in seen_keys:
+                    raise ValueError(f"API returned duplicate parcel identifier: {key}")
+                seen_keys.add(key)
+                features.append(feature)
+
+            candidate_next_url = _next_link(payload, config.endpoint)
+            reached_reported_total = number_matched is not None and len(features) >= number_matched
+            reached_short_final_page = page_count > 1 and len(page_features) < config.limit
+            if reached_reported_total or reached_short_final_page:
+                next_url = None
+            else:
+                next_url = candidate_next_url
+            params = None
+
+        if first_payload is None or last_response is None:
+            raise RuntimeError("parcel API returned no pages")
+
+        combined_payload = {
+            key: value
+            for key, value in first_payload.items()
+            if key not in {"features", "links", "numberReturned"}
+        }
+        combined_payload["features"] = features
+        combined_payload["numberReturned"] = len(features)
+        combined_payload["links"] = [
+            link
+            for link in first_payload.get("links", [])
+            if isinstance(link, dict) and link.get("rel") in {"self", "alternate"}
+        ]
+        return ParcelFetchResult(
+            payload=combined_payload,
+            last_response=last_response,
+            total_attempts=total_attempts,
+            page_count=page_count,
+            number_matched=number_matched,
+            matched_count_difference=(
+                None if number_matched is None else number_matched - len(features)
+            ),
+            truncated=next_url is not None,
+        )
     finally:
         if owns_client:
             active_client.close()
@@ -143,7 +265,8 @@ def run_parcel_ingestion(
     config.validate()
     run_id = ingestion_id or str(uuid.uuid4())
     started_at = now()
-    payload, response, attempts = fetch_parcels(config, client=client, sleep=sleep)
+    fetch_result = fetch_parcels(config, client=client, sleep=sleep)
+    payload = fetch_result.payload
     completed_at = now()
 
     run_directory = output_root / SOURCE_ID / run_id
@@ -167,12 +290,17 @@ def run_parcel_ingestion(
         "started_at": _iso(started_at),
         "completed_at": _iso(completed_at),
         "duration_ms": round((completed_at - started_at).total_seconds() * 1000),
-        "request": _request_params(config),
+        "request": {**_request_params(config), "max_features": config.max_features},
         "response": {
-            "http_status": response.status_code,
-            "content_type": response.headers.get("content-type"),
-            "attempts": attempts,
+            "http_status": fetch_result.last_response.status_code,
+            "content_type": fetch_result.last_response.headers.get("content-type"),
+            "attempts": fetch_result.total_attempts,
+            "page_count": fetch_result.page_count,
+            "number_matched": fetch_result.number_matched,
+            "matched_count_difference": fetch_result.matched_count_difference,
+            "matched_count_consistent": fetch_result.matched_count_difference in {None, 0},
             "feature_count": len(features),
+            "truncated": fetch_result.truncated,
             "geometry_types": geometry_types,
             "property_keys": property_keys,
             "sha256": hashlib.sha256(encoded).hexdigest(),
@@ -192,7 +320,8 @@ def load_project_config(path: Path) -> ParcelIngestionConfig:
     region = config["region"]
     return ParcelIngestionConfig(
         bbox=tuple(float(value) for value in region["bbox"]),
-        limit=int(region["max_parcels"]),
+        limit=int(region["parcel_page_size"]),
+        max_features=int(region["max_parcels"]),
     )
 
 

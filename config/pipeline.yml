@@ -1,11 +1,12 @@
 project:
   name: renewable-site-lakehouse
-  region: wiesbaden_mvp
+  region: limburg_weilburg_rural_mvp
 
 region:
   # min_lon, min_lat, max_lon, max_lat
-  bbox: [8.20, 50.05, 8.30, 50.12]
-  max_parcels: 100
+  bbox: [8.15, 50.425, 8.175, 50.45]
+  parcel_page_size: 200
+  max_parcels: 1000
   max_grid_assets: 500
 
 quality:
