@@ -10,6 +10,25 @@ notebook reads one parcel ingestion from `workspace.bronze.parcels_raw` and crea
 
 No file upload is required because Silver reads the managed Bronze Delta table.
 
+The transformation also converts source coordinates such as `"8.156836"` into numeric GeoJSON
+coordinates such as `8.156836`. When the same ingestion is rerun, the Delta merge updates existing
+Silver rows whose normalized geometry changed; no table deletion is required.
+It also restores coordinate pairs that Spark serializes as nested JSON strings when Polygon and
+MultiPolygon records are inferred together.
+
+The source bbox is an intersection filter: a parcel can intersect the requested area while its
+centroid lies just outside it. Silver therefore validates centroids against WGS84 coordinate ranges,
+not against the request bbox. If a previously quarantined row becomes valid after a rule correction,
+the rerun removes that stale quarantine row automatically.
+
+If the source omits `properties.pos`, as it does for the six MultiPolygon records in the current
+snapshot, Silver derives a deterministic centre from the geometry bounding box. This fallback is
+used for distance screening and is not represented as a source-provided cadastral centroid.
+
+Silver also applies the OGC topology check used by the downstream spatial join. For the current
+snapshot, 970 parcels pass and two topologically invalid polygons are quarantined. A rerun moves
+rows between the valid and quarantine tables when a corrected quality rule changes their status.
+
 Run the notebook twice. On both runs:
 
 - `bronze_count` must equal `accounted_count`

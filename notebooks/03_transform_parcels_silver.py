@@ -3,17 +3,20 @@
 
 # COMMAND ----------
 
+import json
+import math
 import re
 
 from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as F
+from pyspark.sql.types import ArrayType, DoubleType, StringType
 
 # COMMAND ----------
 
 dbutils.widgets.text("catalog", "workspace")
 dbutils.widgets.text("bronze_schema", "bronze")
 dbutils.widgets.text("silver_schema", "silver")
-dbutils.widgets.text("ingestion_id", "bad4b270-a420-4075-b159-2775966077da")
+dbutils.widgets.text("ingestion_id", "98c5af3d-dc45-481f-bebf-9a6d7979672e")
 dbutils.widgets.text("minimum_area_m2", "20000")
 
 catalog = dbutils.widgets.get("catalog")
@@ -58,6 +61,65 @@ print(f"Quarantine output: {quarantine_table}")
 # COMMAND ----------
 
 
+def normalize_geometry_json(raw_geometry: str) -> str | None:
+    """Convert string-valued GeoJSON coordinates to JSON numbers."""
+    try:
+        geometry = json.loads(raw_geometry)
+
+        def convert(value):
+            if isinstance(value, list):
+                return [convert(item) for item in value]
+            if isinstance(value, str) and value.strip().startswith("["):
+                return convert(json.loads(value))
+            return float(value)
+
+        geometry["coordinates"] = convert(geometry["coordinates"])
+        return json.dumps(geometry, separators=(",", ":"))
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+
+
+normalize_geometry_json_udf = F.udf(normalize_geometry_json, StringType())
+
+
+def geometry_bbox_center(raw_geometry: str) -> list[float] | None:
+    """Return [latitude, longitude] for the centre of a geometry bounding box."""
+    try:
+        normalized_geometry = normalize_geometry_json(raw_geometry)
+        geometry = json.loads(normalized_geometry)
+        points = []
+
+        def collect(value):
+            if (
+                isinstance(value, list)
+                and len(value) >= 2
+                and all(isinstance(item, (int, float)) for item in value[:2])
+            ):
+                points.append((float(value[0]), float(value[1])))
+                return
+            if isinstance(value, list):
+                for item in value:
+                    collect(item)
+
+        collect(geometry["coordinates"])
+        if not points:
+            return None
+        longitudes = [point[0] for point in points]
+        latitudes = [point[1] for point in points]
+        return [
+            (min(latitudes) + max(latitudes)) / 2,
+            (min(longitudes) + max(longitudes)) / 2,
+        ]
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+
+
+geometry_bbox_center_udf = F.udf(
+    geometry_bbox_center,
+    ArrayType(DoubleType()),
+)
+
+
 def transform_parcels(bronze: DataFrame) -> DataFrame:
     """Parse source fields and attach deterministic data-quality errors."""
 
@@ -67,13 +129,13 @@ def transform_parcels(bronze: DataFrame) -> DataFrame:
     area_uom = F.get_json_object("raw_feature_json", f"{properties}.areaValue_uom")
     position = F.trim(F.get_json_object("raw_feature_json", f"{properties}.pos"))
     position_parts = F.split(position, r"\s+")
-    centroid_lat = F.element_at(position_parts, 1).cast("double")
-    centroid_lon = F.element_at(position_parts, 2).cast("double")
-    bbox_parts = F.split("request_bbox", ",")
-    min_lon = F.element_at(bbox_parts, 1).cast("double")
-    min_lat = F.element_at(bbox_parts, 2).cast("double")
-    max_lon = F.element_at(bbox_parts, 3).cast("double")
-    max_lat = F.element_at(bbox_parts, 4).cast("double")
+    source_centroid_lat = F.element_at(position_parts, 1).cast("double")
+    source_centroid_lon = F.element_at(position_parts, 2).cast("double")
+    raw_geometry = F.get_json_object("raw_feature_json", "$.geometry")
+    geometry_json = normalize_geometry_json_udf(raw_geometry)
+    fallback_center = geometry_bbox_center_udf(raw_geometry)
+    centroid_lat = F.coalesce(source_centroid_lat, F.element_at(fallback_center, 1))
+    centroid_lon = F.coalesce(source_centroid_lon, F.element_at(fallback_center, 2))
 
     parsed = bronze.select(
         "ingestion_id",
@@ -86,13 +148,9 @@ def transform_parcels(bronze: DataFrame) -> DataFrame:
         area_m2.alias("source_area_m2"),
         area_uom.alias("source_area_uom"),
         F.col("geometry_type"),
-        F.get_json_object("raw_feature_json", "$.geometry").alias("geometry_json"),
+        geometry_json.alias("geometry_json"),
         centroid_lat.alias("centroid_lat"),
         centroid_lon.alias("centroid_lon"),
-        min_lon.alias("request_min_lon"),
-        min_lat.alias("request_min_lat"),
-        max_lon.alias("request_max_lon"),
-        max_lat.alias("request_max_lat"),
         "source_id",
         "source_license",
         "source_license_url",
@@ -101,6 +159,10 @@ def transform_parcels(bronze: DataFrame) -> DataFrame:
         "source_completed_at",
         F.col("loaded_at").alias("bronze_loaded_at"),
         "raw_feature_json",
+    )
+    parsed = parsed.withColumn(
+        "geometry_is_valid",
+        F.expr("st_isvalid(st_geomfromgeojson(geometry_json))"),
     )
 
     duplicate_window = Window.partitionBy("ingestion_id", "parcel_id")
@@ -127,13 +189,16 @@ def transform_parcels(bronze: DataFrame) -> DataFrame:
             ),
             F.when(F.col("geometry_json").isNull(), F.lit("missing_geometry")),
             F.when(
+                F.col("geometry_json").isNotNull()
+                & (~F.coalesce(F.col("geometry_is_valid"), F.lit(False))),
+                F.lit("invalid_geometry_topology"),
+            ),
+            F.when(
                 F.col("centroid_lat").isNull()
                 | F.col("centroid_lon").isNull()
-                | (F.col("centroid_lat") < F.col("request_min_lat"))
-                | (F.col("centroid_lat") > F.col("request_max_lat"))
-                | (F.col("centroid_lon") < F.col("request_min_lon"))
-                | (F.col("centroid_lon") > F.col("request_max_lon")),
-                F.lit("centroid_outside_request_bbox"),
+                | (~F.col("centroid_lat").between(-90, 90))
+                | (~F.col("centroid_lon").between(-180, 180)),
+                F.lit("invalid_centroid_coordinates"),
             ),
         ),
     )
@@ -182,9 +247,25 @@ expected_errors = {
     "non_positive_area",
     "unexpected_area_unit",
     "unsupported_geometry_type",
-    "centroid_outside_request_bbox",
+    "invalid_centroid_coordinates",
 }
 assert expected_errors.issubset(set(synthetic_result["quality_errors"]))
+normalized_geometry = json.loads(
+    normalize_geometry_json('{"type":"Point","coordinates":["8.2","50.1"]}')
+)
+assert all(isinstance(value, float) for value in normalized_geometry["coordinates"])
+normalized_nested_geometry = json.loads(
+    normalize_geometry_json('{"type":"MultiPolygon","coordinates":[[["[8.2,50.1]","[8.3,50.2]"]]]}')
+)
+assert normalized_nested_geometry["coordinates"][0][0][0] == [8.2, 50.1]
+calculated_bbox_center = geometry_bbox_center(
+    '{"type":"MultiPolygon","coordinates":[[[[8.2,50.1],[8.4,50.3]]]]}'
+)
+assert calculated_bbox_center is not None
+assert all(
+    math.isclose(actual, expected, rel_tol=0, abs_tol=1e-9)
+    for actual, expected in zip(calculated_bbox_center, [50.2, 8.3], strict=True)
+)
 
 # COMMAND ----------
 
@@ -231,6 +312,12 @@ assert valid_count + invalid_count == bronze_count, "Silver accounting does not 
 
 display(valid_batch.limit(10))
 display(invalid_batch.limit(10))
+display(
+    invalid_batch.select(F.explode("quality_errors").alias("quality_error"))
+    .groupBy("quality_error")
+    .count()
+    .orderBy(F.desc("count"), "quality_error")
+)
 
 # COMMAND ----------
 
@@ -294,7 +381,28 @@ spark.sql(
     USING valid_parcels_batch AS source
       ON target.ingestion_id = source.ingestion_id
      AND target.parcel_id = source.parcel_id
+    WHEN MATCHED AND target.geometry_json <> source.geometry_json THEN UPDATE SET *
     WHEN NOT MATCHED THEN INSERT *
+    """
+)
+
+spark.sql(
+    f"""
+    MERGE INTO {silver_table} AS target
+    USING invalid_parcels_batch AS source
+      ON target.ingestion_id = source.ingestion_id
+     AND target.parcel_id = source.parcel_id
+    WHEN MATCHED THEN DELETE
+    """
+)
+
+spark.sql(
+    f"""
+    MERGE INTO {quarantine_table} AS target
+    USING valid_parcels_batch AS source
+      ON target.ingestion_id = source.ingestion_id
+     AND target.bronze_feature_id = source.parcel_id
+    WHEN MATCHED THEN DELETE
     """
 )
 
