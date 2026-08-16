@@ -57,7 +57,7 @@ machine-readable failure reasons.
 | Field | Type | Required | Rule |
 |---|---|---:|---|
 | `parcel_id` | string | yes | non-empty and unique in the source snapshot |
-| `geometry_json` | string | yes | GeoJSON Polygon or MultiPolygon |
+| `geometry_json` | string | yes | GeoJSON Polygon or MultiPolygon with numeric coordinates |
 | `municipality` | string | no | normalized display name |
 | `land_use` | string | no | controlled value or `unknown` |
 | `source_area_m2` | double | no | greater than zero when present |
@@ -72,8 +72,8 @@ Additional Silver fields:
 | `national_cadastral_reference` | string | no | source-provided public reference |
 | `parcel_label` | string | no | source-provided display label |
 | `source_area_uom` | string | yes | must equal `m2` |
-| `centroid_lat` | double | yes | inside the source request bounding box |
-| `centroid_lon` | double | yes | inside the source request bounding box |
+| `centroid_lat` | double | yes | source `pos` latitude, or geometry bbox-centre fallback; range -90 to 90 |
+| `centroid_lon` | double | yes | source `pos` longitude, or geometry bbox-centre fallback; range -180 to 180 |
 | `meets_minimum_area` | boolean | yes | business flag; false does not mean invalid data |
 | `quality_status` | string | yes | `passed` in `silver.parcels` |
 | `transformed_at` | timestamp | yes | Silver processing time |
@@ -88,7 +88,8 @@ Parcel quarantine error codes:
 - `unexpected_area_unit`
 - `unsupported_geometry_type`
 - `missing_geometry`
-- `centroid_outside_request_bbox`
+- `invalid_geometry_topology`
+- `invalid_centroid_coordinates`
 
 ## Grid asset contract
 
@@ -137,8 +138,36 @@ Grid-asset quarantine error codes:
 
 ## Site assessment grain
 
-One row per `parcel_id` and `assessment_date`.
+`gold.fact_site_assessment` contains one row per `parcel_id` and `assessment_date`. The related
+dimensions are `gold.dim_parcel`, `gold.dim_grid_asset` and `gold.dim_data_source`.
 
 Required measures include gross area, estimated usable area, estimated PV MWp, nearest grid asset,
 distance, score components, total score, red flags, data-quality status and capacity confidence.
+
+| Field | Type | Required | Rule |
+|---|---|---:|---|
+| `assessment_id` | string | yes | deterministic parcel, grid-ingestion and date key |
+| `parcel_key` | string | yes | joins to `gold.dim_parcel` |
+| `nearest_grid_asset_key` | string | yes | joins to `gold.dim_grid_asset` |
+| `estimated_usable_area_m2` | double | yes | gross area multiplied by the documented assumption |
+| `estimated_pv_mwp` | double | yes | usable area divided by square metres per MWp |
+| `nearest_grid_distance_m` | double | yes | Haversine centroid distance to the nearest proxy |
+| `grid_score` | double | yes | bounded 0 to 100, weighted 40% |
+| `land_score` | double | yes | bounded 0 to 100, weighted 35% |
+| `data_quality_score` | double | yes | bounded 0 to 100, weighted 15% |
+| `planning_score` | double | yes | defaults to neutral 50, weighted 10% |
+| `total_score` | double | yes | weighted score bounded 0 to 100 |
+| `eligible_for_shortlist` | boolean | yes | standalone minimum area and maximum grid-distance rules pass |
+| `red_flags` | array<string> | yes | explicit screening limitations and failed rules |
+| `capacity_status` | string | yes | remains `unknown` for public OSM proxies |
+| `capacity_confidence` | string | yes | `proxy_only` in the MVP |
+| `adjacent_parcel_count` | long | no | count of other snapshot parcels that intersect or share a boundary |
+| `adjacent_parcel_area_m2` | double | no | sum of the gross area of direct neighbors |
+| `potential_combined_area_m2` | double | no | anchor parcel area plus direct-neighbor area |
+| `potential_land_pool` | boolean | no | small parcel whose combined direct-neighbor area reaches the minimum |
+| `candidate_type` | string | no | standalone candidate, land-pool opportunity or below threshold |
+
+The adjacency fields are screening indicators only. They do not establish ownership, land-use
+compatibility, planning feasibility or an approved land-pooling arrangement. They are nullable so
+the current notebook can evolve an existing Gold table without deleting prior assessment history.
 

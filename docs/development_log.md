@@ -1,5 +1,74 @@
 # Development log
 
+## 2026-08-14 - Gold model revised for the rural snapshot
+
+### Completed
+
+- Verified the new Silver inputs: 972 parcels and 412 grid proxies.
+- Updated Gold defaults to the new parcel and grid ingestion identifiers.
+- Added direct parcel-adjacency analysis with Databricks spatial SQL functions.
+- Corrected the Silver geometry contract after runtime verification exposed string-valued source
+  coordinates that the spatial SQL parser rejects.
+- Added an idempotent Silver merge update so existing rows receive numeric GeoJSON coordinates.
+- Corrected the centroid rule after confirming that bbox queries return intersecting parcels whose
+  centroids can legitimately fall outside the requested rectangle.
+- Added quarantine reconciliation so rows that pass corrected rules are removed from the stale
+  quarantine set.
+- Extended coordinate normalization for the six MultiPolygon records whose deeper coordinate arrays
+  were serialized by Spark as nested JSON strings.
+- Confirmed that the same six source records omit `properties.pos` and added a deterministic
+  geometry-bounding-box centre fallback for distance screening.
+- Replaced exact floating-point equality in the fallback self-check with a tolerance comparison.
+- Corrected an extra closing bracket in the synthetic MultiPolygon fallback test fixture.
+- Promoted OGC topology validation from the Gold fail-fast check into Silver data quality rules.
+- Added two-way Silver/quarantine reconciliation; the current snapshot contains 970 valid parcels
+  and two topologically invalid polygons.
+- Separated standalone candidates, land-pool opportunities and below-threshold parcels.
+- Added an idempotent schema extension so an existing Gold fact table does not need to be deleted.
+- Verified the revised Gold notebook twice with 970 fact rows and stable idempotent results.
+
+### Decisions
+
+- Keep `eligible_for_shortlist` limited to standalone parcels within the grid-distance rule.
+- Treat adjacent small parcels as investigation opportunities, not completed land pools.
+- Do not infer ownership, compatible land use, planning permission or grid capacity from public
+  geometry and OSM proxy data.
+
+### Next
+
+1. Use the verified Gold table as the Power BI source.
+2. Build the candidate overview, ranking and limitation views.
+
+### Blockers
+
+- None.
+
+## 2026-08-13 - Gold site-assessment model prepared
+
+### Completed
+
+- Added Gold parcel, grid-asset and data-source dimensions.
+- Added nearest-grid matching with a transparent Haversine centroid-distance calculation.
+- Added explainable land, grid, data-quality and planning score components.
+- Added usable-area and PV-capacity screening estimates, shortlist rules and red flags.
+- Added a dated site-assessment fact table with idempotent Delta merge keys.
+
+### Decisions
+
+- Use centroid distance for the MVP and document that it is a proxy for line and polygon assets.
+- Keep planning at a neutral score of 50 until an authoritative planning source is introduced.
+- Keep grid capacity `unknown` and capacity confidence `proxy_only`.
+- Use a 70% usable-area assumption and 10,000 square metres per estimated MWp.
+
+### Next
+
+1. Execute the Gold notebook twice and verify fact-table grain and idempotency.
+2. Connect the verified Gold tables to Power BI.
+
+### Blockers
+
+- Databricks execution requires the project owner's authenticated workspace session.
+
 ## 2026-08-13 - Grid-asset Silver transformation completed
 
 ### Completed

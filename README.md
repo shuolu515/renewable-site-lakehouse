@@ -9,7 +9,7 @@ generates explainable candidate-site scores, and serves business-ready tables to
 
 ## MVP scope
 
-- Region: a bounded area around Wiesbaden, Germany
+- Region: a bounded rural study area in Limburg-Weilburg, Hessen, Germany
 - Sources: Hessen ALKIS/INSPIRE WFS and OpenStreetMap Overpass
 - Processing: Databricks, PySpark, Spark SQL and Delta Lake
 - Serving: Gold star schema and Power BI
@@ -48,7 +48,7 @@ powerbi/      dashboard documentation; PBIX files are ignored by default
 
 ## Current status
 
-Phase 3 - Silver and data quality is in progress.
+Phase 4 - Gold screening model is complete. Power BI delivery is next.
 
 - [x] Independent repository scaffold
 - [x] MVP scope and architecture
@@ -61,7 +61,7 @@ Phase 3 - Silver and data quality is in progress.
 - [x] Grid-asset Bronze Delta notebook
 - [x] Parcel Silver transformation and quarantine notebook
 - [x] Grid-asset Silver transformation and quarantine notebook
-- [ ] Gold Delta implementation
+- [x] Gold Delta implementation
 - [ ] Power BI dashboard
 
 ## Local setup
@@ -129,6 +129,14 @@ typed analytical fields, applies deterministic quality rules and routes invalid 
 Import `notebooks/04_transform_grid_assets_silver.py` after the grid Bronze table is ready. It
 normalizes OSM asset types, geometry and voltage fields and routes invalid rows to
 `workspace.silver.invalid_grid_assets`.
+
+## Build the Gold screening model
+
+Import `notebooks/05_build_gold_site_assessment.py` after both Silver notebooks have completed. It
+creates a parcel and grid-asset star schema, finds each parcel's nearest public grid proxy and
+calculates transparent screening scores. It separates parcels that independently meet the area rule
+from smaller parcels whose directly adjacent area indicates a possible land-assembly opportunity.
+See `docs/databricks_gold_walkthrough.md` for verification and interpretation limits.
 
 ## Data and licensing
 
