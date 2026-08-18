@@ -1,0 +1,35 @@
+Parcel Count =
+DISTINCTCOUNT(SiteCandidates[parcel_key])
+
+Standalone Candidates =
+CALCULATE(
+    [Parcel Count],
+    SiteCandidates[candidate_type] = "standalone_candidate"
+)
+
+Land Pool Opportunities =
+CALCULATE(
+    [Parcel Count],
+    SiteCandidates[candidate_type] = "land_pool_opportunity"
+)
+
+Shortlisted Parcels =
+CALCULATE(
+    [Parcel Count],
+    SiteCandidates[eligible_for_shortlist] = TRUE()
+)
+
+Average Total Score =
+ROUND(AVERAGE(SiteCandidates[total_score]), 2)
+
+Estimated PV MWp =
+ROUND(SUM(SiteCandidates[estimated_pv_mwp]), 2)
+
+Median Grid Distance m =
+ROUND(MEDIAN(SiteCandidates[nearest_grid_distance_m]), 0)
+
+Unknown Grid Capacity =
+CALCULATE(
+    [Parcel Count],
+    SiteCandidates[capacity_status] = "unknown"
+)

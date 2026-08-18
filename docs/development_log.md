@@ -1,5 +1,33 @@
 # Development log
 
+## 2026-08-17 - Power BI serving views verified
+
+### Completed
+
+- Added current-snapshot candidate and exploded red-flag views for the Power BI semantic model.
+- Verified 970 unique parcel assessments: 71 standalone candidates, 436 land-pool opportunities and
+  463 below-threshold parcels.
+- Confirmed all 71 standalone candidates satisfy the current shortlist distance rule.
+- Confirmed all 970 assessments retain unknown grid-capacity and planning-status warnings.
+- Added reusable DAX measures and a three-page dashboard specification.
+- Repeated the serving notebook with unchanged row and category counts, confirming idempotent view
+  publication.
+
+### Decisions
+
+- Use Import mode for the small portfolio dataset.
+- Present land-pool results as overlapping investigation opportunities, not independent projects.
+- Map parcel centroids and state explicitly that they are not cadastral boundaries.
+
+### Next
+
+1. Connect Power BI Desktop to the Databricks SQL warehouse.
+2. Build and visually review the three dashboard pages.
+
+### Blockers
+
+- Power BI Desktop connection setup remains to be completed.
+
 ## 2026-08-14 - Gold model revised for the rural snapshot
 
 ### Completed

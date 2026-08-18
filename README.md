@@ -48,7 +48,7 @@ powerbi/      dashboard documentation; PBIX files are ignored by default
 
 ## Current status
 
-Phase 4 - Gold screening model is complete. Power BI delivery is next.
+Phase 5 - Power BI serving and dashboard delivery is in progress.
 
 - [x] Independent repository scaffold
 - [x] MVP scope and architecture
