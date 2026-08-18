@@ -2,21 +2,36 @@ Parcel Count =
 DISTINCTCOUNT(SiteCandidates[parcel_key])
 
 Standalone Candidates =
-CALCULATE(
-    [Parcel Count],
-    SiteCandidates[candidate_type] = "standalone_candidate"
+COALESCE(
+    CALCULATE(
+        [Parcel Count],
+        KEEPFILTERS(
+            SiteCandidates[candidate_type] = "standalone_candidate"
+        )
+    ),
+    0
 )
 
 Land Pool Opportunities =
-CALCULATE(
-    [Parcel Count],
-    SiteCandidates[candidate_type] = "land_pool_opportunity"
+COALESCE(
+    CALCULATE(
+        [Parcel Count],
+        KEEPFILTERS(
+            SiteCandidates[candidate_type] = "land_pool_opportunity"
+        )
+    ),
+    0
 )
 
 Shortlisted Parcels =
-CALCULATE(
-    [Parcel Count],
-    SiteCandidates[eligible_for_shortlist] = TRUE()
+COALESCE(
+    CALCULATE(
+        [Parcel Count],
+        KEEPFILTERS(
+            SiteCandidates[eligible_for_shortlist] = TRUE()
+        )
+    ),
+    0
 )
 
 Average Total Score =

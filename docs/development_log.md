@@ -1,5 +1,35 @@
 # Development log
 
+## 2026-08-19 - Power BI screening overview completed
+
+### Completed
+
+- Connected Power BI Desktop to the Databricks SQL warehouse with OAuth and Import mode.
+- Loaded the current candidate and red-flag serving views and verified the one-to-many assessment
+  relationship.
+- Built the screening KPI cards, candidate-type distribution, interactive slicer, area-versus-grid
+  proximity bubble chart and ranked candidate table.
+- Reconciled the report to 970 parcels, 71 standalone candidates, 436 land-pool opportunities and
+  71 shortlisted parcels.
+- Corrected the category measures so report filters are intersected with their business rules and
+  empty intersections display zero.
+
+### Decisions
+
+- Store portfolio measures under the `SiteCandidates` table for semantic-model clarity.
+- Keep rank, area, distance and score fields at row-level grain in the candidate table visual.
+- Open the report on the unfiltered portfolio rather than a preselected candidate type.
+
+### Next
+
+1. Build and validate the candidate map page.
+2. Build the confidence and limitations page from the red-flag view.
+3. Complete visual review and dashboard documentation.
+
+### Blockers
+
+- None.
+
 ## 2026-08-17 - Power BI serving views verified
 
 ### Completed
